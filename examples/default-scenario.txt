@@ -1,12 +1,11 @@
-Example scenario
+Example Designed Constellation
 Latitude: 35 deg
 Longitude: 51 deg
+Target altitude: 0 m
 Altitude: 550 km
 Inclination: 97.6 deg
 Satellites: 32
 Planes: 8
-Satellites per plane: 4
-RAAN spacing: 45 deg
 Phase offset between planes: 22.5 deg
 Max off-nadir: 30 deg
 Duration: 24 h

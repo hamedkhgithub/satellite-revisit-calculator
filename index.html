@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Satellite Revisit Calculator v0.6</title>
+  <title>Satellite Revisit Calculator v0.7</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -11,80 +11,126 @@
     <header class="topbar">
       <div>
         <h1>Satellite Revisit Calculator</h1>
-        <p class="subtitle">محاسبه و بهینه‌سازی هندسی Revisit برای منظومه ماهواره‌ای</p>
+        <p class="subtitle">محاسبه Revisit برای منظومه طراحی‌شده یا مدار واقعی TLE/SGP4</p>
       </div>
-      <div class="version-badge">Release v0.6</div>
+      <div class="version-badge">Release v0.7</div>
     </header>
+
+    <section class="mode-card">
+      <div class="mode-title">Orbit Source</div>
+      <div class="mode-options">
+        <label class="mode-option">
+          <input type="radio" name="orbitMode" value="synthetic" checked />
+          <span>Designed Constellation</span>
+        </label>
+        <label class="mode-option">
+          <input type="radio" name="orbitMode" value="tle" />
+          <span>TLE / SGP4</span>
+        </label>
+      </div>
+    </section>
 
     <section class="layout-grid">
       <div class="section-card">
-        <h2>ورودی‌ها</h2>
+        <div id="commonInputs">
+          <h2>Target & Simulation</h2>
+          <div class="form-grid">
+            <div class="field">
+              <label for="lat">عرض جغرافیایی هدف (°)</label>
+              <input id="lat" type="number" step="0.0001" value="35" />
+            </div>
+            <div class="field">
+              <label for="lon">طول جغرافیایی هدف (°)</label>
+              <input id="lon" type="number" step="0.0001" value="51" />
+            </div>
+            <div class="field">
+              <label for="targetAlt">ارتفاع هدف از سطح دریا (m)</label>
+              <input id="targetAlt" type="number" step="1" value="0" />
+            </div>
+            <div class="field">
+              <label for="sweep">حداکثر Off-Nadir (°)</label>
+              <input id="sweep" type="number" step="0.1" value="30" />
+            </div>
+            <div class="field">
+              <label for="hours">مدت شبیه‌سازی (ساعت)</label>
+              <input id="hours" type="number" step="1" value="24" />
+            </div>
+            <div class="field">
+              <label for="step">گام زمانی (ثانیه)</label>
+              <input id="step" type="number" step="1" value="10" />
+            </div>
+          </div>
+        </div>
 
-        <div class="form-grid">
-          <div class="field">
-            <label for="lat">عرض جغرافیایی هدف (°)</label>
-            <input id="lat" type="number" step="0.0001" value="35" />
+        <div id="syntheticPanel">
+          <h2>Designed Constellation</h2>
+          <div class="form-grid">
+            <div class="field">
+              <label for="alt">ارتفاع مدار (km)</label>
+              <input id="alt" type="number" step="1" value="550" />
+            </div>
+            <div class="field">
+              <label for="inc">Inclination (°)</label>
+              <input id="inc" type="number" step="0.1" value="97.6" />
+            </div>
+            <div class="field">
+              <label for="nsat">تعداد ماهواره‌ها</label>
+              <input id="nsat" type="number" step="1" value="32" />
+            </div>
+            <div class="field">
+              <label for="planes">تعداد صفحات مداری</label>
+              <input id="planes" type="number" step="1" value="8" />
+            </div>
+            <div class="field">
+              <label>ماهواره در هر صفحه</label>
+              <div id="satPerPlane" class="derived-box">4</div>
+            </div>
+            <div class="field">
+              <label>فاصله RAAN صفحات (°)</label>
+              <div id="raanSpacing" class="derived-box">45.00</div>
+            </div>
+            <div class="field">
+              <label for="phaseOffset">Phase Offset Between Planes (°)</label>
+              <input id="phaseOffset" type="number" step="0.1" value="22.5" />
+              <small>اختلاف فاز صفحه بعدی نسبت به صفحه قبلی</small>
+            </div>
+            <div class="field">
+              <label for="raan0">RAAN شروع (°)</label>
+              <input id="raan0" type="number" step="0.1" value="0" />
+            </div>
+          </div>
+        </div>
+
+        <div id="tlePanel" class="hidden">
+          <h2>TLE / SGP4</h2>
+
+          <div class="tle-actions">
+            <label class="file-button">
+              <input id="tleFile" type="file" accept=".tle,.txt" />
+              انتخاب فایل TLE
+            </label>
+            <span id="tleFileName" class="muted">فایلی انتخاب نشده</span>
           </div>
 
           <div class="field">
-            <label for="lon">طول جغرافیایی هدف (°)</label>
-            <input id="lon" type="number" step="0.0001" value="51" />
+            <label for="tleText">یا TLE را اینجا Paste کنید</label>
+            <textarea id="tleText" rows="12" spellcheck="false"
+              placeholder="SATELLITE NAME&#10;1 xxxxxU ...&#10;2 xxxxx ..."></textarea>
           </div>
 
-          <div class="field">
-            <label for="alt">ارتفاع مدار (km)</label>
-            <input id="alt" type="number" step="1" value="550" />
+          <div class="form-grid">
+            <div class="field">
+              <label for="startTime">Start Time (UTC)</label>
+              <input id="startTime" type="datetime-local" />
+            </div>
+            <div class="field">
+              <label>TLE Status</label>
+              <div id="tleStatusBox" class="derived-box multiline">No TLE loaded</div>
+            </div>
           </div>
 
-          <div class="field">
-            <label for="inc">Inclination (°)</label>
-            <input id="inc" type="number" step="0.1" value="97.6" />
-          </div>
-
-          <div class="field">
-            <label for="nsat">تعداد ماهواره‌ها</label>
-            <input id="nsat" type="number" step="1" value="32" />
-          </div>
-
-          <div class="field">
-            <label for="planes">تعداد صفحات مداری</label>
-            <input id="planes" type="number" step="1" value="8" />
-          </div>
-
-          <div class="field">
-            <label>ماهواره در هر صفحه</label>
-            <div id="satPerPlane" class="derived-box">4</div>
-          </div>
-
-          <div class="field">
-            <label>فاصله RAAN صفحات (°)</label>
-            <div id="raanSpacing" class="derived-box">45.00</div>
-          </div>
-
-          <div class="field">
-            <label for="phaseOffset">Phase Offset Between Planes (°)</label>
-            <input id="phaseOffset" type="number" step="0.1" value="22.5" />
-            <small>اختلاف فاز صفحه بعدی نسبت به صفحه قبلی</small>
-          </div>
-
-          <div class="field">
-            <label for="raan0">RAAN شروع (°)</label>
-            <input id="raan0" type="number" step="0.1" value="0" />
-          </div>
-
-          <div class="field">
-            <label for="sweep">حداکثر Off-Nadir (°)</label>
-            <input id="sweep" type="number" step="0.1" value="30" />
-          </div>
-
-          <div class="field">
-            <label for="hours">مدت شبیه‌سازی (ساعت)</label>
-            <input id="hours" type="number" step="1" value="24" />
-          </div>
-
-          <div class="field">
-            <label for="step">گام زمانی (ثانیه)</label>
-            <input id="step" type="number" step="1" value="10" />
+          <div class="button-row">
+            <button id="parseTleBtn" class="secondary" type="button">Parse / Validate TLE</button>
           </div>
         </div>
 
@@ -97,10 +143,10 @@
         <div id="summary" class="summary-grid">
           <div><span>Max Revisit</span><strong id="maxRev">—</strong></div>
           <div><span>Average Revisit</span><strong id="avgRev">—</strong></div>
+          <div><span>Median Revisit</span><strong id="medianRev">—</strong></div>
           <div><span>Std. Deviation</span><strong id="stdRev">—</strong></div>
           <div><span>Access Windows</span><strong id="passes">—</strong></div>
-          <div><span>Orbital Period</span><strong id="period">—</strong></div>
-          <div><span>Temporal Coverage</span><strong id="coverage">—</strong></div>
+          <div><span>Satellites with Access</span><strong id="satAccessCount">—</strong></div>
         </div>
 
         <div class="table-card">
@@ -112,7 +158,9 @@
                   <th>#</th>
                   <th>ماهواره(ها)</th>
                   <th>شروع</th>
+                  <th>Best</th>
                   <th>پایان</th>
+                  <th>Min Off-Nadir</th>
                   <th>مدت</th>
                   <th>فاصله تا بعدی</th>
                 </tr>
@@ -123,52 +171,54 @@
         </div>
       </div>
 
-      <aside class="optimization-card">
+      <aside class="optimization-card" id="optimizationCard">
         <div class="opt-head">
           <h2>Optimization</h2>
-          <span class="mini-badge">v0.6</span>
+          <span class="mini-badge">v0.7</span>
         </div>
 
-        <div class="opt-targets">
-          <label class="opt-target">
-            <input type="radio" name="optTarget" value="max" checked />
-            <span>Minimum Maximum Revisit</span>
-          </label>
+        <div id="optSyntheticOnly">
+          <div class="opt-targets">
+            <label class="opt-target">
+              <input type="radio" name="optTarget" value="max" checked />
+              <span>Minimum Maximum Revisit</span>
+            </label>
+            <label class="opt-target">
+              <input type="radio" name="optTarget" value="avg" />
+              <span>Minimum Average Revisit</span>
+            </label>
+            <label class="opt-target">
+              <input type="radio" name="optTarget" value="std" />
+              <span>Maximum Uniformity</span>
+            </label>
+          </div>
 
-          <label class="opt-target">
-            <input type="radio" name="optTarget" value="avg" />
-            <span>Minimum Average Revisit</span>
-          </label>
+          <div class="field">
+            <label for="optPlaneMode">Planes to test</label>
+            <select id="optPlaneMode">
+              <option value="divisors" selected>Divisors of satellite count</option>
+              <option value="current">Current planes only</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="phaseStep">Phase Offset search step (°)</label>
+            <input id="phaseStep" type="number" step="0.5" value="5" />
+          </div>
+          <div class="field">
+            <label for="raanStep">RAAN search step (°)</label>
+            <input id="raanStep" type="number" step="1" value="30" />
+          </div>
 
-          <label class="opt-target">
-            <input type="radio" name="optTarget" value="std" />
-            <span>Maximum Uniformity</span>
-          </label>
+          <button id="optimizeBtn" class="primary full" type="button">Optimize Constellation</button>
         </div>
 
-        <div class="field">
-          <label for="optPlaneMode">Planes to test</label>
-          <select id="optPlaneMode">
-            <option value="divisors" selected>Divisors of satellite count</option>
-            <option value="current">Current planes only</option>
-          </select>
+        <div id="tleOptMessage" class="hidden opt-result">
+          در حالت TLE موقعیت ماهواره‌ها توسط TLE/SGP4 تعیین می‌شود، بنابراین پارامترهای طراحی منظومه قابل Optimize نیستند.
         </div>
-
-        <div class="field">
-          <label for="phaseStep">Phase Offset search step (°)</label>
-          <input id="phaseStep" type="number" step="0.5" value="5" />
-        </div>
-
-        <div class="field">
-          <label for="raanStep">RAAN search step (°)</label>
-          <input id="raanStep" type="number" step="1" value="30" />
-        </div>
-
-        <button id="optimizeBtn" class="primary full" type="button">Optimize Constellation</button>
 
         <div class="progress-block">
           <div class="progress-header">
-            <span>Optimization Progress</span>
+            <span>Progress</span>
             <span id="optProgressText">0%</span>
           </div>
           <div class="progress-track">
@@ -177,19 +227,18 @@
           <div id="optStatus" class="opt-status">Ready</div>
         </div>
 
-        <div id="optResult" class="opt-result">
-          هنوز بهینه‌سازی اجرا نشده است.
-        </div>
+        <div id="optResult" class="opt-result">هنوز بهینه‌سازی اجرا نشده است.</div>
       </aside>
     </section>
 
     <section class="note-card">
-      <strong>محدودیت مدل:</strong>
-      این نسخه فرصت هندسی تصویربرداری را با مدار دایروی، چرخش زمین و محدودیت Off-Nadir محاسبه می‌کند.
-      روشنایی خورشید، ابر، slew-rate، زمان تثبیت سنجنده و tasking عملیاتی لحاظ نشده‌اند.
+      <strong>توجه:</strong>
+      در حالت TLE، SGP4 موقعیت واقعی مداری را از روی عناصر TLE محاسبه می‌کند، اما TLE جهت واقعی دوربین را مشخص نمی‌کند.
+      شرط Off-Nadir در این ابزار یک محدودیت هندسی فرضی برای قابلیت تصویربرداری است.
     </section>
   </main>
 
+  <script src="https://cdn.jsdelivr.net/npm/satellite.js@5.0.0/dist/satellite.min.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

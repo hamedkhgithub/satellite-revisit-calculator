@@ -1,21 +1,17 @@
 # Changelog
 
+## v0.7
+- Added TLE / SGP4 orbit mode.
+- Added `.tle` file upload and TLE paste input.
+- Added TLE validation and epoch range display.
+- Added UTC simulation start date/time.
+- Added target altitude input.
+- Added per-pass best time and minimum off-nadir.
+- Added median revisit statistic.
+- Added satellites-with-access statistic.
+- CSV export upgraded for TLE mode.
+- Designed Constellation mode and optimizer retained.
+
 ## v0.6
-- Added satellite ID(s) to each access window.
-- Added plane and slot labels, e.g. SAT-05 (P2-1).
-- Added satellite identifier(s) to CSV export.
-- Revisit calculation remains constellation-union based.
-
-## v0.5
-- Replaced Walker phase factor with direct phase offset in degrees.
-- Added satellites-per-plane and RAAN-spacing derived values.
-- Optimizer searches phase offset directly.
-- UI version badge updated.
-- Radio sizing hard-fixed to 18x18 px.
-
-## v0.4.1
-- Fixed oversized radio buttons.
-
-## v0.4
-- Optimization panel visible before first optimization.
-- Version displayed in UI.
+- Added satellite ID(s) to access windows.
+- Added plane and slot labels.

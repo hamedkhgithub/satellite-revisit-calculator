@@ -1,21 +1,36 @@
-# Satellite Revisit Calculator v0.6
+# Satellite Revisit Calculator v0.7
 
-Changes in v0.5:
-- Replaced Walker Phase with **Phase Offset Between Planes (deg)**.
-- Added auto-derived:
-  - Satellites per plane
-  - RAAN spacing
-- Optimizer now searches directly over phase offset in degrees.
-- Optimization target remains selectable before optimization.
-- Version number is visible in the UI.
-- Radio button sizing fixed explicitly.
+GitHub Pages compatible, client-side application.
 
-This is a client-side GitHub Pages application.
+## Modes
 
+### Designed Constellation
+- Circular orbit model
+- Altitude / inclination
+- Satellite count / orbital planes
+- Phase offset between planes
+- RAAN start
+- Constellation optimizer
 
-## v0.6
-- Each access window now shows which satellite(s) saw the target.
-- Satellite IDs are assigned in constellation order: `SAT-01`, `SAT-02`, ...
-- Plane/slot is also shown, e.g. `SAT-05 (P2-1)`.
-- CSV export includes the satellite identifier(s) for each access window.
-- Revisit metrics still use the union of all constellation access windows.
+### TLE / SGP4
+- Upload a `.tle` / `.txt` file or paste TLE text
+- TLE parsing and validation
+- SGP4 propagation using `satellite.js`
+- User-selected UTC start time
+- Target latitude / longitude / altitude
+- Maximum off-nadir constraint
+- Access windows with satellite name
+- Best time and minimum off-nadir per access window
+- Max / mean / median / standard-deviation revisit
+- CSV export
+- TLE epoch range display
+
+## Important limitation
+
+A TLE describes the orbit, not the actual camera pointing direction.
+The off-nadir limit is treated as a geometric field-of-regard constraint.
+
+## Dependency
+
+`satellite.js` v5 is loaded from jsDelivr in `index.html`.
+Internet access is therefore required when the page is first loaded.

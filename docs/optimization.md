@@ -1,17 +1,18 @@
-# Optimization model
+# Revisit Calculation
 
-The optimizer can minimize one of:
-- Maximum revisit
-- Average revisit
-- Revisit standard deviation (uniformity)
+## Designed Constellation mode
+Uses a circular orbit model with Earth rotation.
 
-Parameters searched:
-- Number of orbital planes
-- Phase offset between adjacent planes, in degrees
-- RAAN start, in degrees
+## TLE / SGP4 mode
+Uses satellite.js SGP4 propagation for each TLE and each simulation timestamp.
 
-The phase offset is now a direct geometric parameter:
+At each timestamp:
+1. Propagate TLE to ECI.
+2. Convert satellite ECI to ECEF.
+3. Compute target ECEF position.
+4. Compute line-of-sight.
+5. Compute off-nadir angle from the satellite nadir vector.
+6. Apply horizon and maximum off-nadir constraints.
+7. Merge consecutive visible samples into access windows.
 
-`phase of plane j = j * phase_offset`
-
-This is easier to interpret than Walker F.
+Revisit statistics are computed from the union of all access windows in the constellation.
