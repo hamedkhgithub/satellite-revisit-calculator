@@ -3,96 +3,108 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="Satellite revisit-time calculator for circular Walker-like constellations." />
-  <title>Satellite Revisit Time Calculator</title>
+  <title>Satellite Revisit Calculator v0.5</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
-  <main class="page-shell">
-    <header class="hero">
+  <main class="container">
+    <header class="topbar">
       <div>
-        <p class="eyebrow">Satellite Constellation Tool | Release v0.4.1</p>
-        <h1>محاسبه‌گر Revisit Time ماهواره</h1>
-        <p class="subtitle">
-          شبیه‌سازی هندسی پنجره‌های دسترسی برای یک نقطه زمینی با فرض مدار دایروی،
-          چرخش زمین و محدودیت زاویه Off‑Nadir دوربین.
-        </p>
+        <h1>Satellite Revisit Calculator</h1>
+        <p class="subtitle">محاسبه و بهینه‌سازی هندسی Revisit برای منظومه ماهواره‌ای</p>
       </div>
-      <div class="badge">Version v0.4.1 • Client-side • No server</div>
+      <div class="version-badge">Release v0.5</div>
     </header>
 
-    <section class="layout">
-      <form id="revisitForm" class="panel input-panel">
+    <section class="layout-grid">
+      <div class="section-card">
         <h2>ورودی‌ها</h2>
+
         <div class="form-grid">
-          <label>عرض جغرافیایی هدف (°)
-            <input id="lat" type="number" step="0.0001" value="0" min="-90" max="90" />
-          </label>
-          <label>طول جغرافیایی هدف (°)
-            <input id="lon" type="number" step="0.0001" value="0" min="-180" max="180" />
-          </label>
-          <label>ارتفاع مدار (km)
-            <input id="alt" type="number" step="1" value="550" min="100" max="50000" />
-          </label>
-          <label>Inclination (°)
-            <input id="inc" type="number" step="0.1" value="97.6" min="0" max="180" />
-          </label>
-          <label>تعداد ماهواره‌ها
-            <input id="nSat" type="number" step="1" value="12" min="1" max="500" />
-          </label>
-          <label>تعداد صفحات مداری
-            <input id="planes" type="number" step="1" value="6" min="1" max="100" />
-          </label>
-          <label>حداکثر Off‑Nadir (°)
-            <input id="sweep" type="number" step="0.1" value="30" min="0" max="89" />
-          </label>
-          <label>RAAN شروع (°)
-            <input id="raan0" type="number" step="0.1" value="0" min="0" max="360" />
-          </label>
-          <label>Walker phase
-            <input id="phase" type="number" step="0.1" value="1" min="0" max="100" />
-          </label>
-          <label>مدت شبیه‌سازی (ساعت)
-            <input id="hours" type="number" step="1" value="24" min="1" max="168" />
-          </label>
-          <label>گام زمانی (ثانیه)
-            <input id="step" type="number" step="1" value="10" min="1" max="300" />
-          </label>
-        </div>
-
-        <div class="actions">
-          <button type="submit" class="primary">محاسبه Revisit</button>
-          <button type="button" id="presetBtn" class="secondary">نمونه 550 km / SSO</button>
-          <button type="button" id="exportBtn" class="secondary">خروجی CSV</button>
-          <button type="button" id="optimizeBtn" class="secondary">Optimize Constellation</button>
-        </div>
-        <p id="status" class="status" aria-live="polite"></p>        <div id="optimizationPanel" class="panel optimization-panel">
-          <h3>Optimization Target</h3>
-          <div class="opt-targets">
-            <label class="opt-choice"><input type="radio" name="optTarget" value="max" checked><span>Minimum Maximum Revisit</span></label>
-            <label class="opt-choice"><input type="radio" name="optTarget" value="avg"><span>Minimum Average Revisit</span></label>
-            <label class="opt-choice"><input type="radio" name="optTarget" value="std"><span>Maximum Uniformity</span></label>
+          <div class="field">
+            <label for="lat">عرض جغرافیایی هدف (°)</label>
+            <input id="lat" type="number" step="0.0001" value="35" />
           </div>
-          <div class="opt-progress-row"><span>Optimization progress</span><span id="optProgressText">0%</span></div>
-          <div class="opt-progress-track"><div id="optProgress" class="opt-progress-fill"></div></div>
-          <p id="optStatus">Ready</p>
-        </div>
 
-      </form>
-
-      <section class="results-column">
-        <div class="metric-grid">
-          <article class="metric-card"><span>بیشترین Revisit</span><strong id="maxRevisit">—</strong></article>
-          <article class="metric-card"><span>میانگین Revisit</span><strong id="avgRevisit">—</strong></article>
-          <article class="metric-card"><span>پنجره‌های دسترسی</span><strong id="accessCount">—</strong></article>
-          <article class="metric-card"><span>دوره مداری</span><strong id="period">—</strong></article>
-        </div>
-
-        <section class="panel">
-          <div class="section-head">
-            <h2>پنجره‌های دسترسی</h2>
-            <span id="coverage">—</span>
+          <div class="field">
+            <label for="lon">طول جغرافیایی هدف (°)</label>
+            <input id="lon" type="number" step="0.0001" value="51" />
           </div>
+
+          <div class="field">
+            <label for="alt">ارتفاع مدار (km)</label>
+            <input id="alt" type="number" step="1" value="550" />
+          </div>
+
+          <div class="field">
+            <label for="inc">Inclination (°)</label>
+            <input id="inc" type="number" step="0.1" value="97.6" />
+          </div>
+
+          <div class="field">
+            <label for="nsat">تعداد ماهواره‌ها</label>
+            <input id="nsat" type="number" step="1" value="32" />
+          </div>
+
+          <div class="field">
+            <label for="planes">تعداد صفحات مداری</label>
+            <input id="planes" type="number" step="1" value="8" />
+          </div>
+
+          <div class="field">
+            <label>ماهواره در هر صفحه</label>
+            <div id="satPerPlane" class="derived-box">4</div>
+          </div>
+
+          <div class="field">
+            <label>فاصله RAAN صفحات (°)</label>
+            <div id="raanSpacing" class="derived-box">45.00</div>
+          </div>
+
+          <div class="field">
+            <label for="phaseOffset">Phase Offset Between Planes (°)</label>
+            <input id="phaseOffset" type="number" step="0.1" value="22.5" />
+            <small>اختلاف فاز صفحه بعدی نسبت به صفحه قبلی</small>
+          </div>
+
+          <div class="field">
+            <label for="raan0">RAAN شروع (°)</label>
+            <input id="raan0" type="number" step="0.1" value="0" />
+          </div>
+
+          <div class="field">
+            <label for="sweep">حداکثر Off-Nadir (°)</label>
+            <input id="sweep" type="number" step="0.1" value="30" />
+          </div>
+
+          <div class="field">
+            <label for="hours">مدت شبیه‌سازی (ساعت)</label>
+            <input id="hours" type="number" step="1" value="24" />
+          </div>
+
+          <div class="field">
+            <label for="step">گام زمانی (ثانیه)</label>
+            <input id="step" type="number" step="1" value="10" />
+          </div>
+        </div>
+
+        <div class="button-row">
+          <button id="calcBtn" class="primary" type="button">محاسبه Revisit</button>
+          <button id="presetBtn" class="secondary" type="button">نمونه 550 km / SSO</button>
+          <button id="csvBtn" class="secondary" type="button">خروجی CSV</button>
+        </div>
+
+        <div id="summary" class="summary-grid">
+          <div><span>Max Revisit</span><strong id="maxRev">—</strong></div>
+          <div><span>Average Revisit</span><strong id="avgRev">—</strong></div>
+          <div><span>Std. Deviation</span><strong id="stdRev">—</strong></div>
+          <div><span>Access Windows</span><strong id="passes">—</strong></div>
+          <div><span>Orbital Period</span><strong id="period">—</strong></div>
+          <div><span>Temporal Coverage</span><strong id="coverage">—</strong></div>
+        </div>
+
+        <div class="table-card">
+          <h3>پنجره‌های دسترسی</h3>
           <div class="table-wrap">
             <table>
               <thead>
@@ -104,17 +116,76 @@
                   <th>فاصله تا بعدی</th>
                 </tr>
               </thead>
-              <tbody id="accessTableBody"></tbody>
+              <tbody id="passBody"></tbody>
             </table>
           </div>
-        </section>
+        </div>
+      </div>
 
-        <section class="note">
-          <strong>محدودیت مدل:</strong>
-          این نسخه فرصت هندسی تصویربرداری را محاسبه می‌کند. ابر، نور خورشید، slew rate،
-          زمان تثبیت سنجنده، J2، drag، eccentricity و tasking عملیاتی در این نسخه لحاظ نشده‌اند.
-        </section>
-      </section>
+      <aside class="optimization-card">
+        <div class="opt-head">
+          <h2>Optimization</h2>
+          <span class="mini-badge">v0.5</span>
+        </div>
+
+        <div class="opt-targets">
+          <label class="opt-target">
+            <input type="radio" name="optTarget" value="max" checked />
+            <span>Minimum Maximum Revisit</span>
+          </label>
+
+          <label class="opt-target">
+            <input type="radio" name="optTarget" value="avg" />
+            <span>Minimum Average Revisit</span>
+          </label>
+
+          <label class="opt-target">
+            <input type="radio" name="optTarget" value="std" />
+            <span>Maximum Uniformity</span>
+          </label>
+        </div>
+
+        <div class="field">
+          <label for="optPlaneMode">Planes to test</label>
+          <select id="optPlaneMode">
+            <option value="divisors" selected>Divisors of satellite count</option>
+            <option value="current">Current planes only</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="phaseStep">Phase Offset search step (°)</label>
+          <input id="phaseStep" type="number" step="0.5" value="5" />
+        </div>
+
+        <div class="field">
+          <label for="raanStep">RAAN search step (°)</label>
+          <input id="raanStep" type="number" step="1" value="30" />
+        </div>
+
+        <button id="optimizeBtn" class="primary full" type="button">Optimize Constellation</button>
+
+        <div class="progress-block">
+          <div class="progress-header">
+            <span>Optimization Progress</span>
+            <span id="optProgressText">0%</span>
+          </div>
+          <div class="progress-track">
+            <div id="optProgressBar" class="progress-fill"></div>
+          </div>
+          <div id="optStatus" class="opt-status">Ready</div>
+        </div>
+
+        <div id="optResult" class="opt-result">
+          هنوز بهینه‌سازی اجرا نشده است.
+        </div>
+      </aside>
+    </section>
+
+    <section class="note-card">
+      <strong>محدودیت مدل:</strong>
+      این نسخه فرصت هندسی تصویربرداری را با مدار دایروی، چرخش زمین و محدودیت Off-Nadir محاسبه می‌کند.
+      روشنایی خورشید، ابر، slew-rate، زمان تثبیت سنجنده و tasking عملیاتی لحاظ نشده‌اند.
     </section>
   </main>
 

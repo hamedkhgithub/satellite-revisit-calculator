@@ -1,14 +1,15 @@
 # Changelog
 
-## v0.4.1
-- Fixed oversized radio buttons in Optimization Target.
-- Added compact optimization target cards.
-- Improved progress bar layout.
-- Version shown in the page header.
+## v0.5
+- Replaced Walker phase factor with direct phase offset in degrees.
+- Added satellites-per-plane and RAAN-spacing derived values.
+- Optimizer searches phase offset directly.
+- UI version badge updated.
+- Radio sizing hard-fixed to 18x18 px.
 
-# Changelog
+## v0.4.1
+- Fixed oversized radio buttons.
 
 ## v0.4
-- Optimization target visible before execution
-- Added visible version identifier
-- Optimization panel no longer appears after button click
+- Optimization panel visible before first optimization.
+- Version displayed in UI.

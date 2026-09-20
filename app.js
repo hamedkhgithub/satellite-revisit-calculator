@@ -1,266 +1,391 @@
 (() => {
-  const Re = 6378.137;          // km
-  const mu = 398600.4418;       // km^3/s^2
-  const omegaE = 7.2921159e-5;  // rad/s
+  const Re = 6378.137;
+  const mu = 398600.4418;
+  const omegaE = 7.2921159e-5;
 
-  const els = {
-    form: document.getElementById('revisitForm'),
-    status: document.getElementById('status'),
-    maxRevisit: document.getElementById('maxRevisit'),
-    avgRevisit: document.getElementById('avgRevisit'),
-    accessCount: document.getElementById('accessCount'),
-    period: document.getElementById('period'),
-    coverage: document.getElementById('coverage'),
-    tableBody: document.getElementById('accessTableBody'),
-    presetBtn: document.getElementById('presetBtn'),
-    exportBtn: document.getElementById('exportBtn'),
-    optimizeBtn: document.getElementById('optimizeBtn'),
-    optProgress: document.getElementById('optProgress'),
-    optStatus: document.getElementById('optStatus'),
-    optimizationPanel: document.getElementById('optimizationPanel'),
-  };
-
-  let lastResult = null;
-
-  const rad = d => d * Math.PI / 180;
+  const $ = (id) => document.getElementById(id);
+  const rad = (d) => d * Math.PI / 180;
   const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
-  const dot = (a,b) => a[0]*b[0] + a[1]*b[1] + a[2]*b[2];
-  const norm = a => Math.sqrt(dot(a,a));
-  const sub = (a,b) => [a[0]-b[0], a[1]-b[1], a[2]-b[2]];
 
-  function rotZ(v,a){
-    const c=Math.cos(a), s=Math.sin(a);
-    return [c*v[0]-s*v[1], s*v[0]+c*v[1], v[2]];
-  }
+  function vecSub(a,b){ return [a[0]-b[0], a[1]-b[1], a[2]-b[2]]; }
+  function dot(a,b){ return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+  function norm(a){ return Math.sqrt(dot(a,a)); }
+
   function rotX(v,a){
     const c=Math.cos(a), s=Math.sin(a);
     return [v[0], c*v[1]-s*v[2], s*v[1]+c*v[2]];
   }
 
-  function fmtDuration(s){
-    if (!Number.isFinite(s)) return '—';
-    if (s < 60) return `${s.toFixed(0)} ثانیه`;
-    if (s < 3600) return `${(s/60).toFixed(1)} دقیقه`;
-    return `${(s/3600).toFixed(2)} ساعت`;
+  function rotZ(v,a){
+    const c=Math.cos(a), s=Math.sin(a);
+    return [c*v[0]-s*v[1], s*v[0]+c*v[1], v[2]];
   }
 
-  function fmtClock(s){
-    s = Math.max(0, Math.round(s));
-    const h = Math.floor(s/3600);
-    const m = Math.floor((s%3600)/60);
-    const sec = s%60;
-    return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(sec).padStart(2,'0')}`;
+  function fmtDur(sec){
+    if (!Number.isFinite(sec)) return "—";
+    if (sec < 60) return `${sec.toFixed(0)} ثانیه`;
+    const min = sec/60;
+    if (min < 60) return `${min.toFixed(1)} دقیقه`;
+    return `${(min/60).toFixed(2)} ساعت`;
   }
 
-  function value(id){ return Number(document.getElementById(id).value); }
+  function fmtTime(sec){
+    sec = Math.max(0, Math.round(sec));
+    const h = Math.floor(sec/3600);
+    const m = Math.floor((sec%3600)/60);
+    const s = sec%60;
+    return `${String(h).padStart(2,"0")}:${String(m).padStart(2,"0")}:${String(s).padStart(2,"0")}`;
+  }
 
-  function readInputs(){
+  function stddev(arr){
+    if (!arr.length) return 0;
+    const mean = arr.reduce((a,b)=>a+b,0)/arr.length;
+    const v = arr.reduce((a,b)=>a+(b-mean)*(b-mean),0)/arr.length;
+    return Math.sqrt(v);
+  }
+
+  function getInputs(){
     const p = {
-      lat: value('lat'), lon: value('lon'), alt: value('alt'), inc: value('inc'),
-      nSat: Math.round(value('nSat')), planes: Math.round(value('planes')),
-      sweep: value('sweep'), raan0: value('raan0'), phase: value('phase'),
-      hours: value('hours'), step: value('step')
+      lat: Number($("lat").value),
+      lon: Number($("lon").value),
+      alt: Number($("alt").value),
+      inc: Number($("inc").value),
+      nSat: Math.round(Number($("nsat").value)),
+      planes: Math.round(Number($("planes").value)),
+      phaseOffsetDeg: Number($("phaseOffset").value),
+      raan0: Number($("raan0").value),
+      sweep: Number($("sweep").value),
+      hours: Number($("hours").value),
+      step: Number($("step").value),
     };
 
-    if (!Object.values(p).every(Number.isFinite)) throw new Error('همه ورودی‌ها باید عددی باشند.');
-    if (p.lat < -90 || p.lat > 90) throw new Error('عرض جغرافیایی باید بین -90 و 90 درجه باشد.');
-    if (p.lon < -180 || p.lon > 180) throw new Error('طول جغرافیایی باید بین -180 و 180 درجه باشد.');
-    if (p.nSat < 1 || p.planes < 1 || p.planes > p.nSat) throw new Error('تعداد صفحات باید بین 1 و تعداد ماهواره‌ها باشد.');
-    if (p.alt < 100 || p.alt > 50000) throw new Error('ارتفاع مدار خارج از بازه مجاز است.');
-    if (p.sweep < 0 || p.sweep >= 89) throw new Error('Off-nadir باید بین 0 و 89 درجه باشد.');
-    if (p.step < 1 || p.step > 300) throw new Error('گام زمانی باید بین 1 و 300 ثانیه باشد.');
-    if (p.hours < 1 || p.hours > 168) throw new Error('مدت شبیه‌سازی باید بین 1 و 168 ساعت باشد.');
-
-    const work = (p.hours*3600/p.step) * p.nSat;
-    if (work > 5e6) throw new Error('حجم شبیه‌سازی زیاد است؛ گام زمانی را بزرگ‌تر کنید یا تعداد ماهواره‌ها/مدت را کاهش دهید.');
+    if (!Object.values(p).every(Number.isFinite)) {
+      throw new Error("همه ورودی‌ها باید عددی باشند.");
+    }
+    if (p.nSat < 1 || p.planes < 1 || p.planes > p.nSat) {
+      throw new Error("تعداد صفحات باید بین 1 و تعداد ماهواره‌ها باشد.");
+    }
+    if (p.alt < 100 || p.alt > 50000) throw new Error("ارتفاع مدار نامعتبر است.");
+    if (p.sweep < 0 || p.sweep >= 89) throw new Error("Off-Nadir باید بین 0 و 89 درجه باشد.");
+    if (p.step < 1) throw new Error("گام زمانی باید حداقل 1 ثانیه باشد.");
+    if (p.hours <= 0) throw new Error("مدت شبیه‌سازی باید مثبت باشد.");
     return p;
   }
 
-  function simulate(p){
-    const r = Re + p.alt;
-    const n = Math.sqrt(mu/(r*r*r));
-    const period = 2*Math.PI/n;
-    const lat = rad(p.lat), lon = rad(p.lon), inc = rad(p.inc), sweep = rad(p.sweep), raan0 = rad(p.raan0);
-    const target0 = [Re*Math.cos(lat)*Math.cos(lon), Re*Math.cos(lat)*Math.sin(lon), Re*Math.sin(lat)];
+  function updateDerived(){
+    const n = Math.max(1, Math.round(Number($("nsat").value) || 1));
+    const p = Math.max(1, Math.round(Number($("planes").value) || 1));
+    $("satPerPlane").textContent = (n/p).toFixed(Number.isInteger(n/p) ? 0 : 2);
+    $("raanSpacing").textContent = (360/p).toFixed(2);
+  }
 
-    const satDefs = [];
-    const base = Math.floor(p.nSat/p.planes);
+  function buildSatellites(p){
+    const sats = [];
+    const raan0 = rad(p.raan0);
+    const inc = rad(p.inc);
+    const base = Math.floor(p.nSat / p.planes);
     const rem = p.nSat % p.planes;
+    const phaseOffset = rad(p.phaseOffsetDeg);
 
-    for (let pl=0; pl<p.planes; pl++) {
-      const count = base + (pl < rem ? 1 : 0);
-      if (!count) continue;
-      const raan = raan0 + 2*Math.PI*pl/p.planes;
-      for (let k=0; k<count; k++) {
-        const phasePlane = 2*Math.PI*p.phase*pl/p.nSat;
-        const u0 = 2*Math.PI*k/count + phasePlane;
-        satDefs.push({raan, u0});
+    for (let plane=0; plane<p.planes; plane++){
+      const count = base + (plane < rem ? 1 : 0);
+      if (count <= 0) continue;
+
+      const raan = raan0 + 2*Math.PI*plane/p.planes;
+      const planeShift = plane * phaseOffset;
+
+      for (let k=0; k<count; k++){
+        const u0 = 2*Math.PI*k/count + planeShift;
+        sats.push({ raan, inc, u0 });
       }
     }
+    return sats;
+  }
 
+  function simulateWithParams(p){
+    const r = Re + p.alt;
+    const n = Math.sqrt(mu/(r*r*r));
+    const orbitalPeriod = 2*Math.PI/n;
+
+    const lat = rad(p.lat);
+    const lon = rad(p.lon);
+    const sweep = rad(p.sweep);
+
+    const target0 = [
+      Re*Math.cos(lat)*Math.cos(lon),
+      Re*Math.cos(lat)*Math.sin(lon),
+      Re*Math.sin(lat)
+    ];
+
+    const sats = buildSatellites(p);
     const total = p.hours*3600;
-    const samples = [];
+    const dt = p.step;
 
-    for (let t=0; t<=total; t+=p.step) {
+    const samples = [];
+    for (let t=0; t<=total; t+=dt){
       const target = rotZ(target0, omegaE*t);
       let visible = false;
 
-      for (const sat of satDefs) {
+      for (const sat of sats){
         const u = sat.u0 + n*t;
-        let pos = [r*Math.cos(u), r*Math.sin(u), 0];
-        pos = rotX(pos, inc);
-        pos = rotZ(pos, sat.raan);
 
-        const los = sub(target, pos);
+        let sv = [r*Math.cos(u), r*Math.sin(u), 0];
+        sv = rotX(sv, sat.inc);
+        sv = rotZ(sv, sat.raan);
+
+        const los = vecSub(target, sv);
         const losN = norm(los);
-        const nadir = [-pos[0], -pos[1], -pos[2]];
-        const offNadir = Math.acos(clamp(dot(nadir,los)/(r*losN), -1, 1));
-        const aboveHorizon = dot(sub(pos,target), target) > 0;
+        const nadir = [-sv[0], -sv[1], -sv[2]];
+        const cosOff = clamp(dot(nadir, los)/(r*losN), -1, 1);
+        const off = Math.acos(cosOff);
 
-        if (aboveHorizon && offNadir <= sweep) {
+        const aboveHorizon = dot(vecSub(sv, target), target) > 0;
+        if (aboveHorizon && off <= sweep){
           visible = true;
           break;
         }
       }
+
       samples.push({t, visible});
     }
 
     const windows = [];
     let start = null;
-    for (let i=0; i<samples.length; i++) {
-      if (samples[i].visible && start === null) start = samples[i].t;
-      const closing = start !== null && (!samples[i].visible || i === samples.length-1);
-      if (closing) {
-        const end = samples[i].visible ? samples[i].t : Math.max(start, samples[i].t-p.step);
-        windows.push([start,end]);
+    for (let i=0; i<samples.length; i++){
+      const cur = samples[i];
+
+      if (cur.visible && start === null) start = cur.t;
+
+      const shouldClose = start !== null && (!cur.visible || i === samples.length-1);
+      if (shouldClose){
+        const end = cur.visible ? cur.t : Math.max(start, cur.t-dt);
+        windows.push([start, end]);
         start = null;
       }
     }
 
     const gaps = [];
-    if (windows.length) {
-      for (let i=0; i<windows.length-1; i++) gaps.push(Math.max(0, windows[i+1][0]-windows[i][1]));
+    if (windows.length){
+      for (let i=0; i<windows.length-1; i++){
+        gaps.push(Math.max(0, windows[i+1][0] - windows[i][1]));
+      }
       gaps.push(Math.max(0, windows[0][0] + total - windows[windows.length-1][1]));
     }
 
     const maxGap = gaps.length ? Math.max(...gaps) : total;
     const avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : total;
-    const covered = windows.reduce((s,w)=>s + (w[1]-w[0]),0);
+    const stdGap = gaps.length ? stddev(gaps) : 0;
+    const covered = windows.reduce((a,w)=>a+(w[1]-w[0]),0);
 
-    return {params:p, period, windows, gaps, maxGap, avgGap, covered, total};
+    return {
+      windows,
+      gaps,
+      maxGap,
+      avgGap,
+      stdGap,
+      orbitalPeriod,
+      coverage: total > 0 ? covered/total : 0,
+      total
+    };
   }
 
-  function render(result){
-    els.maxRevisit.textContent = fmtDuration(result.maxGap);
-    els.avgRevisit.textContent = fmtDuration(result.avgGap);
-    els.accessCount.textContent = String(result.windows.length);
-    els.period.textContent = `${(result.period/60).toFixed(2)} دقیقه`;
-    els.coverage.textContent = `پوشش زمانی: ${(100*result.covered/result.total).toFixed(2)}٪`;
+  function renderResult(r){
+    $("maxRev").textContent = fmtDur(r.maxGap);
+    $("avgRev").textContent = fmtDur(r.avgGap);
+    $("stdRev").textContent = fmtDur(r.stdGap);
+    $("passes").textContent = String(r.windows.length);
+    $("period").textContent = `${(r.orbitalPeriod/60).toFixed(2)} دقیقه`;
+    $("coverage").textContent = `${(r.coverage*100).toFixed(2)}%`;
 
-    els.tableBody.innerHTML = '';
-    result.windows.slice(0,150).forEach((w,i) => {
-      const gap = i < result.windows.length-1
-        ? result.windows[i+1][0]-w[1]
-        : result.windows[0][0] + result.total - w[1];
-      const tr = document.createElement('tr');
+    const body = $("passBody");
+    body.innerHTML = "";
+
+    r.windows.slice(0,100).forEach((w,i)=>{
+      const tr = document.createElement("tr");
+      const gap = i < r.windows.length-1
+        ? r.windows[i+1][0]-w[1]
+        : r.windows[0][0] + r.total - w[1];
+
       tr.innerHTML = `
         <td>${i+1}</td>
-        <td dir="ltr">${fmtClock(w[0])}</td>
-        <td dir="ltr">${fmtClock(w[1])}</td>
-        <td>${fmtDuration(w[1]-w[0])}</td>
-        <td>${fmtDuration(gap)}</td>`;
-      els.tableBody.appendChild(tr);
+        <td dir="ltr">${fmtTime(w[0])}</td>
+        <td dir="ltr">${fmtTime(w[1])}</td>
+        <td>${fmtDur(w[1]-w[0])}</td>
+        <td>${fmtDur(gap)}</td>
+      `;
+      body.appendChild(tr);
     });
   }
 
-  function run(){
-    try {
-      els.status.textContent = 'در حال محاسبه…';
-      const result = simulate(readInputs());
-      lastResult = result;
-      render(result);
-      els.status.textContent = 'محاسبه انجام شد. دقت زمانی تقریباً برابر گام زمانی انتخابی است.';
-    } catch (err) {
-      els.status.textContent = err.message;
+  function runSimulation(){
+    try{
+      updateDerived();
+      const p = getInputs();
+      const complexity = (p.hours*3600/p.step)*p.nSat;
+      if (complexity > 8e6){
+        throw new Error("حجم محاسبه زیاد است؛ گام زمانی را بزرگ‌تر یا مدت شبیه‌سازی را کمتر کنید.");
+      }
+      const r = simulateWithParams(p);
+      renderResult(r);
+      window.__lastResult = {p,r};
+    }catch(err){
+      alert(err.message);
+    }
+  }
+
+  function divisorPlanes(n){
+    const out = [];
+    for (let d=1; d<=n; d++){
+      if (n%d===0) out.push(d);
+    }
+    return out;
+  }
+
+  function scoreForTarget(r, target){
+    if (target === "avg") return r.avgGap;
+    if (target === "std") return r.stdGap;
+    return r.maxGap;
+  }
+
+  async function optimize(){
+    const btn = $("optimizeBtn");
+    btn.disabled = true;
+
+    try{
+      const base = getInputs();
+      const target = document.querySelector('input[name="optTarget"]:checked').value;
+      const planeMode = $("optPlaneMode").value;
+      const phaseStep = Math.max(0.5, Number($("phaseStep").value) || 5);
+      const raanStep = Math.max(1, Number($("raanStep").value) || 30);
+
+      const planeList = planeMode === "current" ? [base.planes] : divisorPlanes(base.nSat);
+
+      const combos = [];
+      for (const planes of planeList){
+        for (let phase=0; phase<360; phase+=phaseStep){
+          for (let raan=0; raan<360; raan+=raanStep){
+            combos.push({planes, phase, raan});
+          }
+        }
+      }
+
+      if (combos.length > 5000){
+        const ok = confirm(`تعداد حالت‌ها ${combos.length} است و ممکن است زمان‌بر باشد. ادامه می‌دهید؟`);
+        if (!ok) return;
+      }
+
+      let best = null;
+      let bestScore = Infinity;
+
+      $("optResult").textContent = "در حال جستجو...";
+      $("optStatus").textContent = `Testing 0 / ${combos.length}`;
+      $("optProgressBar").style.width = "0%";
+      $("optProgressText").textContent = "0%";
+
+      const batchSize = 4;
+
+      for (let i=0; i<combos.length; i++){
+        const c = combos[i];
+        const p = {...base, planes:c.planes, phaseOffsetDeg:c.phase, raan0:c.raan};
+        const r = simulateWithParams(p);
+        const score = scoreForTarget(r, target);
+
+        if (score < bestScore){
+          bestScore = score;
+          best = {config:c, result:r};
+        }
+
+        if (i % batchSize === 0 || i === combos.length-1){
+          const pct = Math.round((i+1)/combos.length*100);
+          $("optProgressBar").style.width = `${pct}%`;
+          $("optProgressText").textContent = `${pct}%`;
+          $("optStatus").textContent = `Testing ${i+1} / ${combos.length}`;
+          await new Promise(resolve => setTimeout(resolve, 0));
+        }
+      }
+
+      if (!best) throw new Error("نتیجه‌ای پیدا نشد.");
+
+      $("planes").value = best.config.planes;
+      $("phaseOffset").value = best.config.phase.toFixed(2);
+      $("raan0").value = best.config.raan.toFixed(2);
+      updateDerived();
+      renderResult(best.result);
+      window.__lastResult = {
+        p: {...base, planes:best.config.planes, phaseOffsetDeg:best.config.phase, raan0:best.config.raan},
+        r: best.result
+      };
+
+      $("optStatus").textContent = "Finished";
+      $("optResult").textContent =
+`Best Configuration
+
+Planes: ${best.config.planes}
+Satellites/Plane: ${(base.nSat/best.config.planes).toFixed(2)}
+RAAN spacing: ${(360/best.config.planes).toFixed(2)}°
+Phase offset between planes: ${best.config.phase.toFixed(2)}°
+RAAN start: ${best.config.raan.toFixed(2)}°
+
+Maximum revisit: ${(best.result.maxGap/60).toFixed(2)} min
+Average revisit: ${(best.result.avgGap/60).toFixed(2)} min
+Uniformity σ: ${(best.result.stdGap/60).toFixed(2)} min`;
+    }catch(err){
+      $("optStatus").textContent = "Error";
+      $("optResult").textContent = err.message;
+    }finally{
+      btn.disabled = false;
     }
   }
 
   function exportCSV(){
-    if (!lastResult) return;
-    const rows = [['index','start_s','end_s','duration_s','gap_to_next_s']];
-    lastResult.windows.forEach((w,i) => {
-      const gap = i < lastResult.windows.length-1
-        ? lastResult.windows[i+1][0]-w[1]
-        : lastResult.windows[0][0] + lastResult.total - w[1];
-      rows.push([i+1, w[0], w[1], w[1]-w[0], gap]);
+    if (!window.__lastResult){
+      alert("ابتدا محاسبه را اجرا کنید.");
+      return;
+    }
+
+    const {r} = window.__lastResult;
+    const rows = [["Index","Start","End","Duration_sec","Gap_to_next_sec"]];
+
+    r.windows.forEach((w,i)=>{
+      const gap = i < r.windows.length-1
+        ? r.windows[i+1][0]-w[1]
+        : r.windows[0][0]+r.total-w[1];
+
+      rows.push([i+1, fmtTime(w[0]), fmtTime(w[1]), (w[1]-w[0]).toFixed(0), gap.toFixed(0)]);
     });
-    const csv = rows.map(r => r.join(',')).join('\n');
-    const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+
+    const csv = rows.map(row => row.join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = 'revisit_windows.csv'; a.click();
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "revisit_windows.csv";
+    a.click();
     URL.revokeObjectURL(url);
   }
 
-  els.form.addEventListener('submit', e => { e.preventDefault(); run(); });
-  els.presetBtn.addEventListener('click', () => {
-    document.getElementById('lat').value='0';
-    document.getElementById('lon').value='0';
-    document.getElementById('alt').value='550';
-    document.getElementById('inc').value='97.6';
-    document.getElementById('nSat').value='12';
-    document.getElementById('planes').value='6';
-    document.getElementById('sweep').value='30';
-    document.getElementById('raan0').value='0';
-    document.getElementById('phase').value='1';
-    document.getElementById('hours').value='24';
-    document.getElementById('step').value='10';
-    run();
-  });
-
-  async function optimizeConstellation(){
-    if(!els.optimizationPanel) return;
-    const target=document.querySelector('input[name="optTarget"]:checked').value;
-    const original=readInputs();
-    let best=null;
-    let bestScore=Infinity;
-    const planesList=[4,8,16,32].filter(x=>x<=original.nSat);
-    const phases=Array.from({length:original.nSat},(_,i)=>i);
-    const raans=Array.from({length:8},(_,i)=>i*45);
-    const total=planesList.length*phases.length*raans.length;
-    let done=0;
-    for(const pl of planesList){
-      for(const ph of phases){
-        for(const ra of raans){
-          document.getElementById('planes').value=pl;
-          document.getElementById('phase').value=ph;
-          document.getElementById('raan0').value=ra;
-          const r=simulate(readInputs());
-          let score;
-          if(target==='max') score=r.maxGap;
-          else if(target==='avg') score=r.avgGap;
-          else {
-            const g=r.gaps || [];
-            const mean=g.reduce((a,b)=>a+b,0)/(g.length||1);
-            score=Math.sqrt(g.reduce((a,b)=>a+(b-mean)**2,0)/(g.length||1));
-          }
-          if(score<bestScore){bestScore=score;best={pl,ph,ra,r};}
-          done++;
-          els.optProgress.style.width=(100*done/total).toFixed(1)+'%';
-          els.optStatus.textContent=`Testing ${done}/${total}`;
-          if(done%10===0) await new Promise(resolve=>setTimeout(resolve,0));
-        }
-      }
-    }
-    document.getElementById('planes').value=best.pl;
-    document.getElementById('phase').value=best.ph;
-    document.getElementById('raan0').value=best.ra;
-    els.optStatus.textContent=`Finished: planes=${best.pl}, phase=${best.ph}, RAAN=${best.ra}, score=${(bestScore/60).toFixed(2)} min`;
-    run();
+  function preset(){
+    $("lat").value = 35;
+    $("lon").value = 51;
+    $("alt").value = 550;
+    $("inc").value = 97.6;
+    $("nsat").value = 32;
+    $("planes").value = 8;
+    $("phaseOffset").value = 22.5;
+    $("raan0").value = 0;
+    $("sweep").value = 30;
+    $("hours").value = 24;
+    $("step").value = 10;
+    updateDerived();
+    runSimulation();
   }
 
-  els.exportBtn.addEventListener('click', exportCSV);
-  els.optimizeBtn.addEventListener('click', optimizeConstellation);
+  ["nsat","planes"].forEach(id => $(id).addEventListener("input", updateDerived));
+  $("calcBtn").addEventListener("click", runSimulation);
+  $("presetBtn").addEventListener("click", preset);
+  $("csvBtn").addEventListener("click", exportCSV);
+  $("optimizeBtn").addEventListener("click", optimize);
 
-  run();
+  updateDerived();
+  runSimulation();
 })();
