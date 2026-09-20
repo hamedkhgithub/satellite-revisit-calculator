@@ -222,3 +222,12 @@ th{color:#475569;background:#f8fafc}
   .container{padding:14px}
   .summary-grid{grid-template-columns:1fr}
 }
+
+.sat-cell{
+  min-width:180px;
+  max-width:280px;
+  white-space:normal;
+  line-height:1.6;
+  font-family:Consolas, "Courier New", monospace;
+  font-size:12px;
+}

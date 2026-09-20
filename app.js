@@ -86,6 +86,7 @@
     const base = Math.floor(p.nSat / p.planes);
     const rem = p.nSat % p.planes;
     const phaseOffset = rad(p.phaseOffsetDeg);
+    let globalId = 1;
 
     for (let plane=0; plane<p.planes; plane++){
       const count = base + (plane < rem ? 1 : 0);
@@ -96,7 +97,16 @@
 
       for (let k=0; k<count; k++){
         const u0 = 2*Math.PI*k/count + planeShift;
-        sats.push({ raan, inc, u0 });
+        sats.push({
+          id: globalId,
+          label: `SAT-${String(globalId).padStart(2,"0")}`,
+          plane: plane + 1,
+          slot: k + 1,
+          raan,
+          inc,
+          u0
+        });
+        globalId++;
       }
     }
     return sats;
@@ -124,7 +134,7 @@
     const samples = [];
     for (let t=0; t<=total; t+=dt){
       const target = rotZ(target0, omegaE*t);
-      let visible = false;
+      const visibleSatIds = [];
 
       for (const sat of sats){
         const u = sat.u0 + n*t;
@@ -141,41 +151,63 @@
 
         const aboveHorizon = dot(vecSub(sv, target), target) > 0;
         if (aboveHorizon && off <= sweep){
-          visible = true;
-          break;
+          visibleSatIds.push(sat.id);
         }
       }
 
-      samples.push({t, visible});
+      samples.push({
+        t,
+        visible: visibleSatIds.length > 0,
+        satIds: visibleSatIds
+      });
     }
 
     const windows = [];
     let start = null;
+    let activeSatIds = new Set();
+
     for (let i=0; i<samples.length; i++){
       const cur = samples[i];
 
-      if (cur.visible && start === null) start = cur.t;
+      if (cur.visible && start === null){
+        start = cur.t;
+        activeSatIds = new Set();
+      }
+
+      if (cur.visible){
+        cur.satIds.forEach(id => activeSatIds.add(id));
+      }
 
       const shouldClose = start !== null && (!cur.visible || i === samples.length-1);
       if (shouldClose){
         const end = cur.visible ? cur.t : Math.max(start, cur.t-dt);
-        windows.push([start, end]);
+        const satIds = Array.from(activeSatIds).sort((a,b)=>a-b);
+        windows.push({
+          start,
+          end,
+          satIds,
+          satLabels: satIds.map(id => {
+            const sat = sats.find(s => s.id === id);
+            return sat ? `${sat.label} (P${sat.plane}-${sat.slot})` : `SAT-${id}`;
+          })
+        });
         start = null;
+        activeSatIds = new Set();
       }
     }
 
     const gaps = [];
     if (windows.length){
       for (let i=0; i<windows.length-1; i++){
-        gaps.push(Math.max(0, windows[i+1][0] - windows[i][1]));
+        gaps.push(Math.max(0, windows[i+1].start - windows[i].end));
       }
-      gaps.push(Math.max(0, windows[0][0] + total - windows[windows.length-1][1]));
+      gaps.push(Math.max(0, windows[0].start + total - windows[windows.length-1].end));
     }
 
     const maxGap = gaps.length ? Math.max(...gaps) : total;
     const avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : total;
     const stdGap = gaps.length ? stddev(gaps) : 0;
-    const covered = windows.reduce((a,w)=>a+(w[1]-w[0]),0);
+    const covered = windows.reduce((a,w)=>a+(w.end-w.start),0);
 
     return {
       windows,
@@ -203,14 +235,19 @@
     r.windows.slice(0,100).forEach((w,i)=>{
       const tr = document.createElement("tr");
       const gap = i < r.windows.length-1
-        ? r.windows[i+1][0]-w[1]
-        : r.windows[0][0] + r.total - w[1];
+        ? r.windows[i+1].start-w.end
+        : r.windows[0].start + r.total - w.end;
+
+      const satText = w.satLabels && w.satLabels.length
+        ? w.satLabels.join("، ")
+        : "—";
 
       tr.innerHTML = `
         <td>${i+1}</td>
-        <td dir="ltr">${fmtTime(w[0])}</td>
-        <td dir="ltr">${fmtTime(w[1])}</td>
-        <td>${fmtDur(w[1]-w[0])}</td>
+        <td dir="ltr" class="sat-cell">${satText}</td>
+        <td dir="ltr">${fmtTime(w.start)}</td>
+        <td dir="ltr">${fmtTime(w.end)}</td>
+        <td>${fmtDur(w.end-w.start)}</td>
         <td>${fmtDur(gap)}</td>
       `;
       body.appendChild(tr);
@@ -344,14 +381,22 @@ Uniformity σ: ${(best.result.stdGap/60).toFixed(2)} min`;
     }
 
     const {r} = window.__lastResult;
-    const rows = [["Index","Start","End","Duration_sec","Gap_to_next_sec"]];
+    const rows = [["Index","Satellite(s)","Start","End","Duration_sec","Gap_to_next_sec"]];
 
     r.windows.forEach((w,i)=>{
       const gap = i < r.windows.length-1
-        ? r.windows[i+1][0]-w[1]
-        : r.windows[0][0]+r.total-w[1];
+        ? r.windows[i+1].start-w.end
+        : r.windows[0].start+r.total-w.end;
 
-      rows.push([i+1, fmtTime(w[0]), fmtTime(w[1]), (w[1]-w[0]).toFixed(0), gap.toFixed(0)]);
+      const satText = (w.satLabels || []).join(" | ");
+      rows.push([
+        i+1,
+        `"${satText.replace(/"/g,'""')}"`,
+        fmtTime(w.start),
+        fmtTime(w.end),
+        (w.end-w.start).toFixed(0),
+        gap.toFixed(0)
+      ]);
     });
 
     const csv = rows.map(row => row.join(",")).join("\n");

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.6
+- Added satellite ID(s) to each access window.
+- Added plane and slot labels, e.g. SAT-05 (P2-1).
+- Added satellite identifier(s) to CSV export.
+- Revisit calculation remains constellation-union based.
+
 ## v0.5
 - Replaced Walker phase factor with direct phase offset in degrees.
 - Added satellites-per-plane and RAAN-spacing derived values.
