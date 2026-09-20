@@ -64,8 +64,19 @@
           <button type="submit" class="primary">محاسبه Revisit</button>
           <button type="button" id="presetBtn" class="secondary">نمونه 550 km / SSO</button>
           <button type="button" id="exportBtn" class="secondary">خروجی CSV</button>
+          <button type="button" id="optimizeBtn" class="secondary">Optimize Constellation</button>
         </div>
-        <p id="status" class="status" aria-live="polite"></p>
+        <p id="status" class="status" aria-live="polite"></p>        <div id="optimizationPanel" class="panel" style="display:none;margin-top:12px">
+          <h3>Optimization</h3>
+          <label><input type="radio" name="optTarget" value="max" checked> Minimum Maximum Revisit</label>
+          <label><input type="radio" name="optTarget" value="avg"> Minimum Average Revisit</label>
+          <label><input type="radio" name="optTarget" value="std"> Maximum Uniformity</label>
+          <div style="background:#ddd;height:18px;border-radius:8px;overflow:hidden">
+            <div id="optProgress" style="height:100%;width:0%;background:#1976d2"></div>
+          </div>
+          <p id="optStatus"></p>
+        </div>
+
       </form>
 
       <section class="results-column">
