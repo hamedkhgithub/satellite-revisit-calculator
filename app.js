@@ -14,6 +14,10 @@
     tableBody: document.getElementById('accessTableBody'),
     presetBtn: document.getElementById('presetBtn'),
     exportBtn: document.getElementById('exportBtn'),
+    optimizeBtn: document.getElementById('optimizeBtn'),
+    optProgress: document.getElementById('optProgress'),
+    optStatus: document.getElementById('optStatus'),
+    optimizationPanel: document.getElementById('optimizationPanel'),
   };
 
   let lastResult = null;
@@ -213,7 +217,50 @@
     document.getElementById('step').value='10';
     run();
   });
+
+  async function optimizeConstellation(){
+    if(!els.optimizationPanel) return;
+    const target=document.querySelector('input[name="optTarget"]:checked').value;
+    const original=readInputs();
+    let best=null;
+    let bestScore=Infinity;
+    const planesList=[4,8,16,32].filter(x=>x<=original.nSat);
+    const phases=Array.from({length:original.nSat},(_,i)=>i);
+    const raans=Array.from({length:8},(_,i)=>i*45);
+    const total=planesList.length*phases.length*raans.length;
+    let done=0;
+    for(const pl of planesList){
+      for(const ph of phases){
+        for(const ra of raans){
+          document.getElementById('planes').value=pl;
+          document.getElementById('phase').value=ph;
+          document.getElementById('raan0').value=ra;
+          const r=simulate(readInputs());
+          let score;
+          if(target==='max') score=r.maxGap;
+          else if(target==='avg') score=r.avgGap;
+          else {
+            const g=r.gaps || [];
+            const mean=g.reduce((a,b)=>a+b,0)/(g.length||1);
+            score=Math.sqrt(g.reduce((a,b)=>a+(b-mean)**2,0)/(g.length||1));
+          }
+          if(score<bestScore){bestScore=score;best={pl,ph,ra,r};}
+          done++;
+          els.optProgress.style.width=(100*done/total).toFixed(1)+'%';
+          els.optStatus.textContent=`Testing ${done}/${total}`;
+          if(done%10===0) await new Promise(resolve=>setTimeout(resolve,0));
+        }
+      }
+    }
+    document.getElementById('planes').value=best.pl;
+    document.getElementById('phase').value=best.ph;
+    document.getElementById('raan0').value=best.ra;
+    els.optStatus.textContent=`Finished: planes=${best.pl}, phase=${best.ph}, RAAN=${best.ra}, score=${(bestScore/60).toFixed(2)} min`;
+    run();
+  }
+
   els.exportBtn.addEventListener('click', exportCSV);
+  els.optimizeBtn.addEventListener('click', optimizeConstellation);
 
   run();
 })();
