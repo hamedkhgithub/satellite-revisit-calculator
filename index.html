@@ -11,14 +11,14 @@
   <main class="page-shell">
     <header class="hero">
       <div>
-        <p class="eyebrow">Satellite Constellation Tool | Release v0.4</p>
+        <p class="eyebrow">Satellite Constellation Tool | Release v0.4.1</p>
         <h1>محاسبه‌گر Revisit Time ماهواره</h1>
         <p class="subtitle">
           شبیه‌سازی هندسی پنجره‌های دسترسی برای یک نقطه زمینی با فرض مدار دایروی،
           چرخش زمین و محدودیت زاویه Off‑Nadir دوربین.
         </p>
       </div>
-      <div class="badge">Version v0.4 • Client-side • No server</div>
+      <div class="badge">Version v0.4.1 • Client-side • No server</div>
     </header>
 
     <section class="layout">
@@ -66,15 +66,16 @@
           <button type="button" id="exportBtn" class="secondary">خروجی CSV</button>
           <button type="button" id="optimizeBtn" class="secondary">Optimize Constellation</button>
         </div>
-        <p id="status" class="status" aria-live="polite"></p>        <div id="optimizationPanel" class="panel" style="margin-top:12px">
-          <h3>Optimization</h3>
-          <label><input type="radio" name="optTarget" value="max" checked> Minimum Maximum Revisit</label>
-          <label><input type="radio" name="optTarget" value="avg"> Minimum Average Revisit</label>
-          <label><input type="radio" name="optTarget" value="std"> Maximum Uniformity</label>
-          <div style="background:#ddd;height:18px;border-radius:8px;overflow:hidden">
-            <div id="optProgress" style="height:100%;width:0%;background:#1976d2"></div>
+        <p id="status" class="status" aria-live="polite"></p>        <div id="optimizationPanel" class="panel optimization-panel">
+          <h3>Optimization Target</h3>
+          <div class="opt-targets">
+            <label class="opt-choice"><input type="radio" name="optTarget" value="max" checked><span>Minimum Maximum Revisit</span></label>
+            <label class="opt-choice"><input type="radio" name="optTarget" value="avg"><span>Minimum Average Revisit</span></label>
+            <label class="opt-choice"><input type="radio" name="optTarget" value="std"><span>Maximum Uniformity</span></label>
           </div>
-          <p id="optStatus"></p>
+          <div class="opt-progress-row"><span>Optimization progress</span><span id="optProgressText">0%</span></div>
+          <div class="opt-progress-track"><div id="optProgress" class="opt-progress-fill"></div></div>
+          <p id="optStatus">Ready</p>
         </div>
 
       </form>

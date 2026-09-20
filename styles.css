@@ -32,11 +32,83 @@ h1 { margin: 0; font-size: clamp(28px, 4vw, 44px); }
 h2 { margin: 0 0 14px; font-size: 19px; }
 .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 label { display: grid; gap: 7px; font-size: 13px; color: var(--muted); }
-input {
+input:not([type="radio"]):not([type="checkbox"]) {
   width: 100%; border: 1px solid var(--border); background: #fff; color: var(--text);
   border-radius: 10px; padding: 11px 12px; min-height: 44px;
 }
-input:focus { outline: 3px solid rgba(36,87,214,.14); border-color: var(--accent); }
+input:not([type="radio"]):not([type="checkbox"]):focus { outline: 3px solid rgba(36,87,214,.14); border-color: var(--accent); }
+
+/* Keep radio/checkbox controls compact; do not inherit numeric-input sizing. */
+input[type="radio"],
+input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  min-height: 0;
+  padding: 0;
+  margin: 0;
+  flex: 0 0 18px;
+  accent-color: var(--accent);
+}
+
+.optimization-panel {
+  margin-top: 14px;
+  padding: 16px;
+  background: #fbfcff;
+}
+.optimization-panel h3 {
+  margin: 0 0 12px;
+  font-size: 17px;
+  color: var(--text);
+}
+.opt-targets {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.opt-choice {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  color: var(--text);
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+.opt-choice:hover { background: var(--soft); }
+.opt-choice span { line-height: 1.35; }
+.opt-progress-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.opt-progress-track {
+  background: #e5e7eb;
+  height: 12px;
+  border-radius: 999px;
+  overflow: hidden;
+}
+.opt-progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width .15s ease;
+}
+#optStatus {
+  min-height: 20px;
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
 button { border-radius: 10px; min-height: 44px; padding: 10px 14px; cursor: pointer; border: 1px solid var(--border); }
 .primary { background: var(--accent); color: #fff; border-color: var(--accent); font-weight: 700; }
