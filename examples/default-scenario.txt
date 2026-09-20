@@ -1,11 +1,5 @@
-Target latitude: 0 deg
-Target longitude: 0 deg
 Altitude: 550 km
 Inclination: 97.6 deg
-Satellites: 12
-Orbital planes: 6
-Max off-nadir: 30 deg
-RAAN start: 0 deg
-Walker phase: 1
-Simulation duration: 24 h
-Time step: 10 s
+Satellites: 32
+Planes: 16
+Off-nadir: 30 deg
