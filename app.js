@@ -100,7 +100,7 @@
     const n=Math.max(1,Math.round(Number($("nsat").value)||1));
     const p=Math.max(1,Math.round(Number($("planes").value)||1));
     $("satPerPlane").textContent=(n/p).toFixed(Number.isInteger(n/p)?0:2);
-    $("raanSpacing").textContent=(360/p).toFixed(2);
+    $("raanSpacing").textContent=(180/p).toFixed(2);
   }
 
   function getSyntheticInputs(){
